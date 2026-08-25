@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocTrack Pro - บันทึกงานส่งเอกสาร</title>
+    <!-- โหลด Tailwind CSS จาก CDN เพื่อความสะดวกรวดเร็วในการตกแต่งหน้าตาแอป -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #FFFDF5; }
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background-color: white; color: black; }
+        }
+    </style>
+</head>
+<body class="text-gray-800 antialiased min-h-screen pb-10">
+
+    <!-- ส่วนหัวของแอปพลิเคชัน -->
+    <header class="no-print bg-[#FFB03A] p-4 text-center text-white text-lg font-bold shadow-sm sticky top-0 z-10 flex justify-center items-center">
+        <span class="bg-[#FFA012] px-6 py-1.5 rounded-full text-sm">DocTrack Pro - บันทึกงานส่งเอกสาร</span>
+    </header>
+
+    <div id="app" class="max-w-md mx-auto p-4">
+        
+        <!-- ส่วนที่ 1: หน้าเลือกชื่อผู้ใช้งานครั้งแรก (ป้องกันการลงผิดชื่อ) -->
+        <div id="select-user-page" class="hidden flex flex-col items-center justify-center pt-16">
+            <div class="text-5xl mb-4">📋</div>
+            <h2 class="text-xl font-bold mb-1">คุณคือใคร?</h2>
+            <p class="text-xs text-gray-400 mb-6 text-center">เลือกชื่อของคุณครั้งแรก ระบบจะจำไว้ให้อัตโนมัติ</p>
+            
+            <div class="grid grid-cols-2 gap-3 w-full px-4 mb-8">
+                <button onclick="setUser('โอภาส')" class="bg-white py-3 border border-gray-200 rounded-xl font-bold text-gray-700 shadow-sm active:bg-orange-50">โอภาส</button>
+                <button onclick="setUser('นรินทร์')" class="bg-white py-3 border border-gray-200 rounded-xl font-bold text-gray-700 shadow-sm active:bg-orange-50">นรินทร์</button>
+                <button onclick="setUser('เจริญชัย')" class="bg-white py-3 border border-gray-200 rounded-xl font-bold text-gray-700 shadow-sm active:bg-orange-50">เจริญชัย</button>
+                <button onclick="setUser('ต้น')" class="bg-white py-3 border border-gray-200 rounded-xl font-bold text-gray-700 shadow-sm active:bg-orange-50">ต้น</button>
+            </div>
+
+            <button onclick="toggleAdminMode()" class="text-xs text-gray-400 underline">เข้าสู่โหมดแอดมิน (จัดการระบบ)</button>
+        </div>
+
+        <!-- ส่วนที่ 2: หน้าหลักของแอป (ใช้งานจริง) -->
+        <div id="main-page" class="hidden">
+            
+            <!-- แถบแสดงสถานะผู้ใช้และปุ่มสลับสำหรับแอดมิน -->
+            <div class="no-print mb-3">
+                <div id="admin-bar" class="hidden text-xs bg-amber-100 p-2 rounded-lg mb-2 text-amber-800 text-center font-semibold">
+                    👑 โหมดผู้ดูแลระบบ (สามารถสลับดูและลงงานให้ทุกคนได้)
+                </div>
+                <div class="flex items-center justify-between text-xs text-gray-500 mb-1">
+                    <span>ผู้ใช้งานปัจจุบัน: <strong id="current-user-name" class="text-base text-gray-800"></strong></span>
+                    <button id="admin-switch-btn" onclick="promptSwitchUser()" class="hidden text-orange-600 underline">เปลี่ยนบัญชี</button>
+                </div>
+                <div id="user-tabs" class="hidden flex gap-1 overflow-x-auto pb-1">
+                    <!-- แท็บเลือกชื่อพนักงานสำหรับแอดมิน -->
+                </div>
+            </div>
+
+            <!-- เมนูปุ่มสลับระหว่างหน้า "ลงงาน" และ "รายงาน" -->
+            <div class="no-print flex rounded-xl bg-gray-200 p-1 mb-4">
+                <button id="tab-form-btn" onclick="switchTab('form')" class="flex-1 py-2 text-sm font-bold rounded-lg bg-orange-500 text-white shadow-sm">✏️ ลงงาน</button>
+                <button id="tab-report-btn" onclick="switchTab('report')" class="flex-1 py-2 text-sm font-bold rounded-lg text-gray-600">📄 รายงาน A4</button>
+            </div>
+
+            <!-- 2.1 หน้าฟอร์มสำหรับลงรายการงาน -->
+            <div id="tab-form" class="no-print bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                <h3 class="font-bold text-sm text-gray-400 mb-2">กำลังบันทึกข้อมูลให้: <span id="form-user-title" class="text-gray-800"></span></h3>
+                
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">วันที่ปฏิบัติงาน</label>
+                        <input type="date" id="input-date" class="w-full p-2.5 bg-gray-50 rounded-xl border-none text-sm text-center font-bold">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">ชื่องาน / สถานที่</label>
+                        <input type="text" id="input-location" placeholder="เช่น ธนาคารกสิกร, ไปรษณีย์" class="w-full p-2.5 bg-gray-50 rounded-xl border-none text-sm">
+                        <!-- ปุ่มคีย์ลัดสถานที่ยอดฮิต -->
+                        <div class="flex flex-wrap gap-1.5 mt-2">
+                            <button onclick="addTag('สามเสน')" class="text-xs bg-orange-50 text-orange-600 px-2 py-1 rounded-full">สามเสน</button>
+                            <button onclick="addTag('ไปรษณีย์')" class="text-xs bg-orange-50 text-orange-600 px-2 py-1 rounded-full">ไปรษณีย์</button>
+                            <button onclick="addTag('ปากคลองตลาด')" class="text-xs bg-orange-50 text-orange-600 px-2 py-1 rounded-full">ปากคลองตลาด</button>
+                            <button onclick="addTag('กรุ๊ป')" class="text-xs bg-orange-50 text-orange-600 px-2 py-1 rounded-full">กรุ๊ป</button>
+                            <button onclick="addTag('สรรพากร')" class="text-xs bg-orange-50 text-orange-600 px-2 py-1 rounded-full">สรรพากร</button>
+                            <button onclick="addTag('ร้านเล็ก')" class="text-xs bg-orange-50 text-orange-600 px-2 py-1 rounded-full">ร้านเล็ก</button>
+                        </div>
+                    </div>
+
+                    <!-- ช่องกรอกเวลาเริ่ม และเวลาจบ ตามคำขอ -->
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">เวลาเริ่มต้น</label>
+                            <input type="time" id="input-time-start" class="w-full p-2 bg-gray-50 rounded-xl border-none text-sm text-center">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">เวลาสิ้นสุด</label>
+                            <input type="time" id="input-time-end" class="w-full p-2 bg-gray-50 rounded-xl border-none text-sm text-center">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">จำนวนเงิน (บาท)</label>
+                        <input type="number" id="input-amount" placeholder="0" class="w-full p-2.5 bg-gray-50 rounded-xl border-none text-center font-bold text-lg">
+                        <!-- ปุ่มคีย์ลัดจำนวนเงิน -->
+                        <div class="flex flex-wrap gap-1.5 mt-2 justify-center">
+                            <button onclick="setAmount(20)" class="text-xs bg-orange-100 text-orange-700 px-3 py-1 rounded-lg">20.-</button>
+                            <button onclick="setAmount(40)" class="text-xs bg-orange-100 text-orange-700 px-3 py-1 rounded-lg">40.-</button>
+                            <button onclick="setAmount(60)" class="text-xs bg-orange-100 text-orange-700 px-3 py-1 rounded-lg">60.-</button>
+                            <button onclick="setAmount(100)" class="text-xs bg-orange-100 text-orange-700 px-3 py-1 rounded-lg">100.-</button>
+                            <button onclick="setAmount(120)" class="text-xs bg-orange-100 text-orange-700 px-3 py-1 rounded-lg">120.-</button>
+                            <button onclick="setAmount(140)" class="text-xs bg-orange-100 text-orange-700 px-3 py-1 rounded-lg">140.-</button>
+                        </div>
+                    </div>
+
+                    <button onclick="saveRecord()" class="w-full py-3 bg-stone-800 text-white font-bold rounded-xl active:bg-orange-500 transition">บันทึกรายการ</button>
+                </div>
+            </div>
+
+            <!-- 2.2 หน้ารายงานสรุปผล และรูปแบบสำหรับพิมพ์เอกสาร A4 / PDF -->
+            <div id="tab-report" class="hidden">
+                <div class="no-print flex justify-between items-center mb-3">
+                    <button onclick="window.print()" class="bg-stone-800 text-white text-xs px-3 py-2 rounded-lg font-bold flex items-center gap-1 shadow-sm">🖨️ พิมพ์เอกสาร / บันทึก PDF</button>
+                    <span class="text-xs text-gray-400">รูปแบบตาราง A4</span>
+                </div>
+
+                <!-- ตารางรายงานขาวดำสไตล์ทางการตามแบบฟอร์มต้นฉบับ -->
+                <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 text-black text-sm">
+                    <h2 class="text-base font-bold mb-3">รายงานการปฏิบัติงาน: <span id="report-user-name"></span></h2>
+                    
+                    <table class="w-full border-collapse border border-gray-400 text-xs text-left">
+                        <thead>
+                            <tr class="bg-gray-100 border-b border-gray-400 text-center">
+                                <th class="border border-gray-400 p-1.5 w-1/5">วัน/เดือน/ปี</th>
+                                <th class="border border-gray-400 p-1.5 w-2/5">รายการ / สถานที่</th>
+                                <th class="border border-gray-400 p-1.5 w-1/4">เวลา (เริ่ม-จบ)</th>
+                                <th class="border border-gray-400 p-1.5 w-1/5 text-right">จำนวนเงิน</th>
+                            </tr>
+                        </thead>
+                        <tbody id="report-table-body">
+                            <!-- ข้อมูลตารางจะถูกประมวลผลและแทรกเข้ามาอัตโนมัติ -->
+                        </tbody>
+                    </table>
+
+                    <div class="flex justify-end mt-4 pt-2 border-t border-gray-300 font-bold text-sm">
+                        <span>TOTAL รวมทั้งสิ้น <span id="report-grand-total" class="underline underline-offset-4 ml-1">0.-</span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ส่วนของการประมวลผลตรรกะแอปพลิเคชัน (JavaScript) -->
+    <script>
+        const USERS = ['โอภาส', 'นรินทร์', 'เจริญชัย', 'ต้น'];
+        let currentUser = localStorage.getItem('doc_track_user') || '';
+        let isAdmin = localStorage.getItem('doc_track_is_admin') === 'true';
+        let records = JSON.parse(localStorage.getItem('doc_track_records') || '[]');
+
+        // ตั้งค่าวันที่ปัจจุบันให้ฟอร์มเป็นค่าเริ่มต้น
+        document.getElementById('input-date').valueAsDate = new Date();
+
+        function initApp() {
+            if (!currentUser && !isAdmin) {
+                document.getElementById('select-user-page').classList.remove('hidden');
+                document.getElementById('main-page').classList.add('hidden');
+            } else {
+                document.getElementById('select-user-page').classList.add('hidden');
+                document.getElementById('main-page').classList.remove('hidden');
+                setupInterface();
+                renderReport();
+            }
+        }
+
+        function setUser(name) {
+            currentUser = name;
+            localStorage.setItem('doc_track_user', name);
+            initApp();
+        }
+
+        function toggleAdminMode() {
+            const pin = prompt("กรุณากรอกรหัส PIN ผู้ดูแลระบบ:");
+            if (pin === "1234") { // รหัสผ่านแอดมินตั้งไว้ที่ 1234 สามารถเปลี่ยนได้ตรงนี้
+                isAdmin = true;
+                localStorage.setItem('doc_track_is_admin', 'true');
+                if (!currentUser) currentUser = USERS[0];
+                initApp();
+            } else if (pin !== null) {
+                alert("รหัส PIN ไม่ถูกต้อง");
+            }
+        }
+
+        function setupInterface() {
+            document.getElementById('current-user-name').innerText = currentUser;
+            document.getElementById('form-user-title').innerText = currentUser;
+            document.getElementById('report-user-name').innerText = currentUser;
+
+            if (isAdmin) {
+                document.getElementById('admin-bar').classList.remove('hidden');
+                document.getElementById('admin-switch-btn').classList.remove('hidden');
+                
+                const tabContainer = document.getElementById('user-tabs');
+                tabContainer.classList.remove('hidden');
+                tabContainer.innerHTML = USERS.map(u => 
+                    `<button onclick="switchAdminUser('${u}')" class="px-3 py-1 rounded-full text-xs font-bold ${u === currentUser ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-700'}">${u}</button>`
+                ).join('');
+            }
+        }
+
+        function switchAdminUser(name) {
+            currentUser = name;
+            setupInterface();
+            renderReport();
+        }
+
+        function promptSwitchUser() {
+            const pin = prompt("กรอกรหัส PIN เพื่อยืนยันการเปลี่ยนบัญชี:");
+            if (pin === "1234") {
+                localStorage.removeItem('doc_track_user');
+                localStorage.removeItem('doc_track_is_admin');
+                currentUser = '';
+                isAdmin = false;
+                initApp();
+            } else if (pin !== null) {
+                alert("รหัส PIN ไม่ถูกต้อง");
+            }
+        }
+
+        function switchTab(tab) {
+            if (tab === 'form') {
+                document.getElementById('tab-form').classList.remove('hidden');
+                document.getElementById('tab-report').classList.add('hidden');
+                document.getElementById('tab-form-btn').className = "flex-1 py-2 text-sm font-bold rounded-lg bg-orange-500 text-white shadow-sm";
+                document.getElementById('tab-report-btn').className = "flex-1 py-2 text-sm font-bold rounded-lg text-gray-600";
+            } else {
+                document.getElementById('tab-form').classList.add('hidden');
+                document.getElementById('tab-report').classList.remove('hidden');
+                document.getElementById('tab-form-btn').className = "flex-1 py-2 text-sm font-bold rounded-lg text-gray-600";
+                document.getElementById('tab-report-btn').className = "flex-1 py-2 text-sm font-bold rounded-lg bg-orange-500 text-white shadow-sm";
+                renderReport();
+            }
+        }
+
+        function addTag(text) {
+            const input = document.getElementById('input-location');
+            input.value = input.value ? input.value + ', ' + text : text;
+        }
+
+        function setAmount(val) {
+            document.getElementById('input-amount').value = val;
+        }
+
+        function saveRecord() {
+            const dateVal = document.getElementById('input-date').value;
+            const location = document.getElementById('input-location').value;
+            const timeStart = document.getElementById('input-time-start').value;
+            const timeEnd = document.getElementById('input-time-end').value;
+            const amount = parseFloat(document.getElementById('input-amount').value || 0);
+
+            if (!location || !timeStart || !timeEnd) {
+                alert("กรุณากรอกข้อมูลสถานที่และช่วงเวลาให้ครบถ้วน");
+                return;
+            }
+
+            // แปลงรูปแบบวันที่เป็น DD/MM/YY (ปีพุทธศักราช)
+            const d = new Date(dateVal);
+            const formattedDate = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getFullYear() + 543).slice(-2)}`;
+
+            const newRecord = {
+                id: Date.now(),
+                user: currentUser,
+                date: formattedDate,
+                location: location,
+                timeRange: `${timeStart} - ${timeEnd} น.`,
+                amount: amount
+            };
+
+            records.push(newRecord);
+            localStorage.setItem('doc_track_records', JSON.stringify(records));
+
+            // ล้างค่าในฟอร์มเตรียมบันทึกรายการถัดไป
+            document.getElementById('input-location').value = '';
+            document.getElementById('input-time-start').value = '';
+            document.getElementById('input-time-end').value = '';
+            document.getElementById('input-amount').value = '';
+
+            alert("บันทึกรายการสำเร็จ!");
+        }
+
+        function renderReport() {
+            const tbody = document.getElementById('report-table-body');
+            tbody.innerHTML = '';
+
+            // กรองข้อมูลเฉพาะของพนักงานที่ถูกเลือกอยู่
+            const userRecords = records.filter(r => r.user === currentUser);
+
+            // จัดกลุ่มรายการตามวันที่
+            const grouped = {};
+            userRecords.forEach(r => {
+                if (!grouped[r.date]) grouped[r.date] = [];
+                grouped[r.date].push(r);
+            });
+
+            let grandTotal = 0;
+
+            for (const date in grouped) {
+                const list = grouped[date];
+                let dayTotal = 0;
+
+                list.forEach((item, index) => {
+                    dayTotal += item.amount;
+                    grandTotal += item.amount;
+
+                    const tr = document.createElement('tr');
+                    tr.className = "border-b border-gray-200";
+                    tr.innerHTML = `
+                        <td class="border border-gray-400 p-1.5 text-center font-bold">${index === 0 ? date : ''}</td>
+                        <td class="border border-gray-400 p-1.5">${index + 1}. ${item.location}</td>
+                        <td class="border border-gray-400 p-1.5 text-center">${item.timeRange}</td>
+                        <td class="border border-gray-400 p-1.5 text-right font-semibold">${item.amount.toLocaleString()}.-</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+                // แถวสรุปยอดรวมประจำวัน (TOTAL ประจำวัน)
+                const totalTr = document.createElement('tr');
+                totalTr.className = "bg-orange-50/50 border-b-2 border-gray-400 font-bold";
+                totalTr.innerHTML = `
+                    <td class="border border-gray-400 p-1.5 text-right" colspan="3">TOTAL</td>
+                    <td class="border border-gray-400 p-1.5 text-right underline">${dayTotal.toLocaleString()}.-</td>
+                `;
+                tbody.appendChild(totalTr);
+            }
+
+            document.getElementById('report-grand-total').innerText = `${grandTotal.toLocaleString()}.-`;
+        }
+
+        // เริ่มต้นรันระบบแอปพลิเคชัน
+        initApp();
+    </script>
+</body>
+</html>
