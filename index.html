@@ -9,7 +9,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
 
-    <title>DocTrack Pro - บันทึกงานส่งเอกสาร</title>
+    <title>DocTrack Pro - บันทึกค่าเที่ยวแผนกส่งเอกสาร</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts: Sarabun -->
@@ -52,34 +52,58 @@
             font-size: 0.9rem;
         }
 
-        /* รูปแบบเอกสาร A4 สำหรับการสั่งพิมพ์ */
+        /* รูปแบบเอกสารสำหรับสั่งพิมพ์ออกกระดาษ A4 */
         @media print {
+            @page {
+                size: A4 portrait;
+                margin: 10mm;
+            }
             .no-print {
                 display: none !important;
             }
             body {
                 background-color: #ffffff !important;
                 padding: 0 !important;
+                color: #000000 !important;
+            }
+            main {
+                max-width: 100% !important;
+                padding: 0 !important;
             }
             .page-a4 {
                 width: 100%;
                 margin: 0;
-                padding: 15mm;
+                padding: 0;
                 box-shadow: none !important;
             }
             .day-card {
-                border: 1px solid #ccc !important;
+                border: 1px solid #000000 !important;
                 page-break-inside: avoid;
+                margin-bottom: 12px !important;
+                box-shadow: none !important;
             }
+            .day-header {
+                background-color: #333333 !important;
+                color: #ffffff !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .print-only-header {
+                display: block !important;
+            }
+        }
+
+        .print-only-header {
+            display: none;
         }
     </style>
 </head>
 <body class="min-h-screen pb-10">
 
-    <!-- Header -->
+    <!-- Header (จะถูกซ่อนเวลาสั่งพิมพ์) -->
     <header class="header-bg no-print p-4 text-center rounded-b-3xl shadow-md sticky top-0 z-10">
         <div class="inline-block bg-white/20 px-6 py-1.5 rounded-full text-white font-bold text-lg backdrop-blur-sm shadow-inner">
-            บันทึกงานส่งเอกสาร
+            บันทึกค่าเที่ยวแผนกส่งเอกสาร
         </div>
         
         <!-- ปุ่มเลือกชื่อผู้ใช้ -->
@@ -91,7 +115,7 @@
         </div>
     </header>
 
-    <!-- ปุ่มสลับแท็บ -->
+    <!-- ปุ่มสลับแท็บ (จะถูกซ่อนเวลาสั่งพิมพ์) -->
     <div class="max-w-md mx-auto p-4 no-print">
         <div class="flex bg-white rounded-full p-1 shadow-sm mb-4">
             <button id="tab-form-btn" onclick="switchTab('form')" class="flex-1 py-2 rounded-full text-sm font-bold text-white bg-orange-500 shadow-md transition-all">
@@ -162,6 +186,7 @@
 
         <!-- แท็บ 2: หน้ารายงาน & พิมพ์ A4 -->
         <div id="tab-report" class="hidden">
+            <!-- ส่วนปุ่มกดบนหน้าจอ -->
             <div class="no-print flex justify-between items-center mb-4 bg-white p-3 rounded-2xl shadow-sm border border-gray-100">
                 <div class="text-sm font-bold text-gray-700">
                     ชื่อ: <span id="report-user-name" class="text-orange-600">โอภาส</span>
@@ -171,6 +196,12 @@
                         🖨️ แชร์ / พิมพ์ A4
                     </button>
                 </div>
+            </div>
+
+            <!-- หัวกระดาษที่จะแสดงเฉพาะตอนพิมพ์งานออกกระดาษ A4 -->
+            <div class="print-only-header text-center mb-6 pb-2 border-b-2 border-black">
+                <h1 class="text-xl font-bold">รายงานบันทึกค่าเที่ยวแผนกส่งเอกสาร</h1>
+                <p class="text-sm font-semibold mt-1">ชื่อผู้ปฏิบัติงาน: <span id="print-user-name">โอภาส</span></p>
             </div>
 
             <div id="report-content" class="page-a4">
@@ -243,6 +274,7 @@
             currentUser = name;
             document.getElementById('form-user-title').innerText = name;
             document.getElementById('report-user-name').innerText = name;
+            document.getElementById('print-user-name').innerText = name;
             
             const btns = document.querySelectorAll('.user-btn');
             btns.forEach(btn => {
@@ -320,7 +352,7 @@
                 id: Date.now(),
                 user: currentUser,
                 date: formattedDate,
-                rawDate: dateVal,
+                rawDate: dateVal, // เก็บค่าวันที่เดิม YYYY-MM-DD ไว้ใช้เรียงลำดับ
                 location: locationVal,
                 time: timeStr,
                 amount: parseFloat(amountVal)
@@ -354,20 +386,28 @@
             const container = document.getElementById('report-list-container');
             container.innerHTML = '';
 
-            const records = getRecords().filter(r => r.user === currentUser);
+            let records = getRecords().filter(r => r.user === currentUser);
 
             if (records.length === 0) {
                 container.innerHTML = `<div class="text-center py-10 text-gray-400 font-medium">ยังไม่มีข้อมูลการลงงานของ ${currentUser}</div>`;
                 return;
             }
 
+            // *** ขั้นตอนสำคัญ: จัดเรียงข้อมูลตามวันที่ (rawDate) จากน้อยไปมาก ***
+            records.sort((a, b) => {
+                if (a.rawDate && b.rawDate) {
+                    return a.rawDate.localeCompare(b.rawDate);
+                }
+                return 0;
+            });
+
             const grouped = {};
-            let grandTotal = 0; // ตัวแปรสำหรับคำนวณยอดรวมทั้งหมด
+            let grandTotal = 0;
 
             records.forEach(r => {
                 if (!grouped[r.date]) grouped[r.date] = [];
                 grouped[r.date].push(r);
-                grandTotal += r.amount; // บวกรวมยอดเงินทุกรายการ
+                grandTotal += r.amount;
             });
 
             for (const dateStr in grouped) {
@@ -406,7 +446,7 @@
                 container.appendChild(dayCard);
             }
 
-            // เพิ่มส่วนแสดงผล TOTAL รวมทั้งหมด ด้านล่างสุด
+            // ยอดรวมทั้งหมด (TOTAL) ด้านล่างสุด
             const grandTotalDiv = document.createElement('div');
             grandTotalDiv.className = 'flex justify-between items-center pt-4 pb-6 px-2 text-base font-bold text-gray-900 border-t-2 border-dashed border-gray-300 mt-6';
             grandTotalDiv.innerHTML = `
