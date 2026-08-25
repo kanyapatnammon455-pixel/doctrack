@@ -3,6 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- ป้องกันไม่ให้เบราว์เซอร์จำหน้าเก่า (No Cache) -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+
     <title>DocTrack Pro - บันทึกงานส่งเอกสาร</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -120,11 +126,11 @@
                     </div>
                     <input type="text" id="input-location" placeholder="เช่น ธนาคารกสิกร, ไปรษณีย์" class="w-full p-3 bg-gray-50 rounded-xl border-0 text-sm focus:ring-2 focus:ring-orange-400 outline-none">
                     
-                    <!-- ปุ่มแท็กด่วน (อัปเดตล่าสุด/ใช้บ่อยอัตโนมัติ) -->
+                    <!-- ปุ่มแท็กด่วน -->
                     <div id="dynamic-tags-container" class="flex flex-wrap gap-1.5 mt-2"></div>
                 </div>
 
-                <!-- ช่องเลือกเวลา (กดแล้วขึ้นนาฬิกาให้เลือก) -->
+                <!-- ช่องเลือกเวลา (กดแล้วขึ้นนาฬิกาเลือกเวลาได้ทันที) -->
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-bold text-gray-500 mb-1">เวลาเริ่ม</label>
@@ -191,7 +197,6 @@
             localStorage.setItem('doc_track_records', JSON.stringify(data));
         }
 
-        // ระบบจัดคำนวณแท็กสถานที่ด่วน (ใช้บ่อย & ล่าสุด)
         function renderDynamicTags() {
             const records = getRecords().filter(r => r.user === currentUser);
             const container = document.getElementById('dynamic-tags-container');
