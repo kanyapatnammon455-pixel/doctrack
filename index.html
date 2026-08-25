@@ -126,11 +126,9 @@
                     </div>
                     <input type="text" id="input-location" placeholder="เช่น ธนาคารกสิกร, ไปรษณีย์" class="w-full p-3 bg-gray-50 rounded-xl border-0 text-sm focus:ring-2 focus:ring-orange-400 outline-none">
                     
-                    <!-- ปุ่มแท็กด่วน -->
                     <div id="dynamic-tags-container" class="flex flex-wrap gap-1.5 mt-2"></div>
                 </div>
 
-                <!-- ช่องเลือกเวลา (กดแล้วขึ้นนาฬิกาเลือกเวลาได้ทันที) -->
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-bold text-gray-500 mb-1">เวลาเริ่ม</label>
@@ -182,7 +180,6 @@
 
     </main>
 
-    <!-- JavaScript สคริปต์การทำงานทั้งหมด -->
     <script>
         let currentUser = 'โอภาส';
         const defaultTags = ['สามแยก', 'ไปรษณีย์', 'ปากคลองตลาด', 'กรุ๊ป', 'สรรพากร', 'ร้านเป็ดเล็ก', 'สะพานพุทธ', 'ขนมหวาน', 'ร้านหมูทอง (ตึกเก่า)', 'ประตูน้ำ'];
@@ -365,9 +362,12 @@
             }
 
             const grouped = {};
+            let grandTotal = 0; // ตัวแปรสำหรับคำนวณยอดรวมทั้งหมด
+
             records.forEach(r => {
                 if (!grouped[r.date]) grouped[r.date] = [];
                 grouped[r.date].push(r);
+                grandTotal += r.amount; // บวกรวมยอดเงินทุกรายการ
             });
 
             for (const dateStr in grouped) {
@@ -405,6 +405,15 @@
 
                 container.appendChild(dayCard);
             }
+
+            // เพิ่มส่วนแสดงผล TOTAL รวมทั้งหมด ด้านล่างสุด
+            const grandTotalDiv = document.createElement('div');
+            grandTotalDiv.className = 'flex justify-between items-center pt-4 pb-6 px-2 text-base font-bold text-gray-900 border-t-2 border-dashed border-gray-300 mt-6';
+            grandTotalDiv.innerHTML = `
+                <span>TOTAL รวมทั้งหมด</span>
+                <span class="text-xl font-extrabold text-gray-900 underline decoration-double">${grandTotal.toLocaleString()}.-</span>
+            `;
+            container.appendChild(grandTotalDiv);
         }
 
         renderDynamicTags();
