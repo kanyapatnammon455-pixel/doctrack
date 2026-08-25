@@ -4,296 +4,406 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DocTrack Pro - บันทึกงานส่งเอกสาร</title>
-    <!-- โหลด html2pdf.js สำหรับดาวน์โหลด PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Sarabun -->
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
-        * { box-sizing: border-box; font-family: 'Sarabun', sans-serif; }
-        body { background-color: #fffbf0; margin: 0; padding: 15px; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .header { background: #ff9800; color: white; text-align: center; padding: 12px; border-radius: 20px; font-weight: bold; font-size: 1.2rem; margin-bottom: 15px; }
-        
-        .user-box { background: #fff8e1; border: 1px solid #ffe0b2; padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: center; }
-        .user-btns { display: flex; gap: 8px; justify-content: center; margin-top: 8px; flex-wrap: wrap; }
-        .btn-user { padding: 6px 16px; border: none; border-radius: 15px; background: #e0e0e0; cursor: pointer; }
-        .btn-user.active { background: #ff6f00; color: white; font-weight: bold; }
-        
-        .tab-btns { display: flex; gap: 10px; margin-bottom: 15px; }
-        .btn-tab { flex: 1; padding: 10px; border: none; border-radius: 8px; background: #e0e0e0; font-weight: bold; cursor: pointer; }
-        .btn-tab.active { background: #ff6f00; color: white; }
-        
-        .form-group { margin-bottom: 12px; }
-        label { display: block; font-weight: bold; margin-bottom: 4px; }
-        input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; }
-        .btn-submit { width: 100%; padding: 12px; background: #4caf50; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        
-        .action-bar { display: flex; gap: 8px; margin-bottom: 15px; }
-        .btn-action { flex: 1; padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; text-align: center; color: white; }
-        .btn-print { background: #333; }
-        .btn-clear-all { background: #e53935; }
-        
-        /* จัดรูปแบบรายงาน A4 */
-        .report-page { background: white; padding: 15px; font-family: 'TH Sarabun PSK', sans-serif; border: 1px solid #ddd; }
-        .report-header { text-align: left; font-size: 16pt; font-weight: bold; margin-bottom: 10px; }
-        table.report-table { width: 100%; border-collapse: collapse; margin-top: 5px; }
-        table.report-table th, table.report-table td { border: 1px solid #000; padding: 4px 8px; font-size: 13pt; }
-        table.report-table th { text-align: center; background-color: #f9f9f9; }
-        .text-center { text-align: center; }
-        .text-right { text-align: right; }
-        .font-bold { font-weight: bold; }
-        .total-summary { text-align: right; font-size: 14pt; font-weight: bold; margin-top: 15px; }
-
-        /* ปุ่มลบรายการรายบรรทัด */
-        .btn-del-item { 
-            background: #e53935; 
-            color: white; 
-            border: none; 
-            border-radius: 4px; 
-            padding: 2px 6px; 
-            font-size: 11px; 
-            cursor: pointer; 
-            margin-left: 8px; 
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: #FFF8EE;
+            color: #333333;
         }
 
-        .no-data { text-align: center; color: #888; padding: 20px !important; }
+        .header-bg {
+            background: linear-gradient(180deg, #FFB03A 0%, #FF9800 100%);
+        }
+
+        .tag-btn {
+            background-color: #FFF3E0;
+            color: #E65100;
+            border: 1px solid #FFE0B2;
+            transition: all 0.2s;
+        }
+        .tag-btn:active {
+            background-color: #FFE0B2;
+            transform: scale(0.95);
+        }
+
+        .day-card {
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            margin-bottom: 16px;
+        }
+        .day-header {
+            background-color: #212121;
+            color: #ffffff;
+            padding: 6px 16px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        /* รูปแบบเอกสาร A4 สำหรับการสั่งพิมพ์ */
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                background-color: #ffffff !important;
+                padding: 0 !important;
+            }
+            .page-a4 {
+                width: 100%;
+                margin: 0;
+                padding: 15mm;
+                box-shadow: none !important;
+            }
+            .day-card {
+                border: 1px solid #ccc !important;
+                page-break-inside: avoid;
+            }
+        }
     </style>
 </head>
-<body>
+<body class="min-h-screen pb-10">
 
-<div class="container">
-    <div class="header">DocTrack Pro - บันทึกงานส่งเอกสาร</div>
-    
-    <div class="user-box">
-        <div>ผู้ใช้งานปัจจุบัน: <span id="current-user-display" style="font-weight:bold;">โอภาส</span></div>
-        <div class="user-btns">
-            <button class="btn-user active" onclick="setUser('โอภาส')">โอภาส</button>
-            <button class="btn-user" onclick="setUser('นรินทร์')">นรินทร์</button>
-            <button class="btn-user" onclick="setUser('เจริญชัย')">เจริญชัย</button>
-            <button class="btn-user" onclick="setUser('ต้น')">ต้น</button>
+    <!-- Header -->
+    <header class="header-bg no-print p-4 text-center rounded-b-3xl shadow-md sticky top-0 z-10">
+        <div class="inline-block bg-white/20 px-6 py-1.5 rounded-full text-white font-bold text-lg backdrop-blur-sm shadow-inner">
+            บันทึกงานส่งเอกสาร
+        </div>
+        
+        <!-- ปุ่มเลือกชื่อผู้ใช้ -->
+        <div class="mt-3 flex justify-center gap-2 flex-wrap">
+            <button onclick="setUser('โอภาส')" class="user-btn px-4 py-1 rounded-full text-xs font-semibold bg-white text-orange-600 shadow-sm">โอภาส</button>
+            <button onclick="setUser('นรินทร์')" class="user-btn px-4 py-1 rounded-full text-xs font-semibold bg-white/40 text-white">นรินทร์</button>
+            <button onclick="setUser('เจริญชัย')" class="user-btn px-4 py-1 rounded-full text-xs font-semibold bg-white/40 text-white">เจริญชัย</button>
+            <button onclick="setUser('ต้น')" class="user-btn px-4 py-1 rounded-full text-xs font-semibold bg-white/40 text-white">ต้น</button>
+        </div>
+    </header>
+
+    <!-- ปุ่มสลับแท็บ -->
+    <div class="max-w-md mx-auto p-4 no-print">
+        <div class="flex bg-white rounded-full p-1 shadow-sm mb-4">
+            <button id="tab-form-btn" onclick="switchTab('form')" class="flex-1 py-2 rounded-full text-sm font-bold text-white bg-orange-500 shadow-md transition-all">
+                ✏️ ลงงาน
+            </button>
+            <button id="tab-report-btn" onclick="switchTab('report')" class="flex-1 py-2 rounded-full text-sm font-bold text-gray-500 transition-all">
+                📄 รายงาน
+            </button>
         </div>
     </div>
 
-    <div class="tab-btns">
-        <button class="btn-tab active" id="tab-form-btn" onclick="switchTab('form')">✏️ ลงงาน</button>
-        <button class="btn-tab" id="tab-report-btn" onclick="switchTab('report')">📄 รายงาน A4</button>
-    </div>
+    <!-- ส่วนเนื้อหาหลัก -->
+    <main class="max-w-md mx-auto px-4">
 
-    <!-- ฟอร์มลงงาน -->
-    <div id="tab-form">
-        <div class="form-group">
-            <label>วัน/เดือน/ปี</label>
-            <input type="date" id="doc-date">
-        </div>
-        <div class="form-group">
-            <label>รายการ / สถานที่</label>
-            <input type="text" id="doc-location" placeholder="เช่น ไปรษณีย์, ปากคลองตลาด">
-        </div>
-        <div class="form-group">
-            <label>เวลา (เริ่ม - จบ)</label>
-            <input type="text" id="doc-time" placeholder="เช่น 09.30-09.55 น.">
-        </div>
-        <div class="form-group">
-            <label>จำนวนเงิน (บาท)</label>
-            <input type="number" id="doc-amount" placeholder="เช่น 40">
-        </div>
-        <button class="btn-submit" onclick="saveData()">บันทึกข้อมูล</button>
-    </div>
+        <!-- แท็บ 1: หน้าลงงาน -->
+        <div id="tab-form" class="bg-white p-5 rounded-3xl shadow-sm border border-gray-100">
+            <div class="mb-4">
+                <span class="text-xs text-gray-400 font-semibold block">กำลังลงงานให้:</span>
+                <span id="form-user-title" class="text-xl font-bold text-gray-800">โอภาส</span>
+            </div>
 
-    <!-- หน้ารายงาน -->
-    <div id="tab-report" style="display:none;">
-        <div class="action-bar">
-            <button class="btn-action btn-print" onclick="downloadPDF()">🖨️ โหลด PDF</button>
-            <button class="btn-action btn-clear-all" onclick="clearUserRecords()">🗑️ ล้างทั้งหมด</button>
-        </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1">วันที่ทำงาน</label>
+                    <input type="date" id="input-date" class="w-full p-3 bg-gray-50 rounded-xl border-0 text-sm focus:ring-2 focus:ring-orange-400 outline-none">
+                </div>
 
-        <div id="pdf-content" class="report-page">
-            <div class="report-header">ชื่อ นาย<span id="rpt-user-name">โอภาส</span></div>
-            <table class="report-table">
-                <thead>
-                    <tr>
-                        <th style="width: 22%;">วันเดือน/ปี</th>
-                        <th style="width: 43%;">รายการ / สถานที่</th>
-                        <th style="width: 20%;">เวลา</th>
-                        <th style="width: 15%;">จำนวนเงิน</th>
-                    </tr>
-                </thead>
-                <tbody id="report-table-body"></tbody>
-            </table>
-            <div class="total-summary">
-                TOTAL <span id="grand-total" style="margin-left: 30px; text-decoration: underline;">0.-</span>
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-xs font-bold text-gray-500">ชื่องาน / สถานที่</label>
+                        <span class="text-[10px] text-orange-500 font-semibold">📍 เลือกด่วนจากประวัติ</span>
+                    </div>
+                    <input type="text" id="input-location" placeholder="เช่น ธนาคารกสิกร, ไปรษณีย์" class="w-full p-3 bg-gray-50 rounded-xl border-0 text-sm focus:ring-2 focus:ring-orange-400 outline-none">
+                    
+                    <!-- ปุ่มแท็กด่วน (อัปเดตล่าสุด/ใช้บ่อยอัตโนมัติ) -->
+                    <div id="dynamic-tags-container" class="flex flex-wrap gap-1.5 mt-2"></div>
+                </div>
+
+                <!-- ช่องเลือกเวลา (กดแล้วขึ้นนาฬิกาให้เลือก) -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 mb-1">เวลาเริ่ม</label>
+                        <input type="time" id="input-time-start" class="w-full p-3 bg-gray-50 rounded-xl border-0 text-sm focus:ring-2 focus:ring-orange-400 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 mb-1">เวลาจบ</label>
+                        <input type="time" id="input-time-end" class="w-full p-3 bg-gray-50 rounded-xl border-0 text-sm focus:ring-2 focus:ring-orange-400 outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1">จำนวนเงิน (บาท)</label>
+                    <input type="number" id="input-amount" placeholder="0" class="w-full p-3 bg-gray-50 rounded-xl border-0 text-sm text-center font-bold text-lg focus:ring-2 focus:ring-orange-400 outline-none">
+                    
+                    <div class="grid grid-cols-6 gap-1.5 mt-2 text-center">
+                        <button type="button" onclick="setAmount(20)" class="bg-amber-50 text-amber-800 text-xs py-1.5 rounded-lg border border-amber-200 font-semibold active:bg-amber-200">20.-</button>
+                        <button type="button" onclick="setAmount(40)" class="bg-amber-50 text-amber-800 text-xs py-1.5 rounded-lg border border-amber-200 font-semibold active:bg-amber-200">40.-</button>
+                        <button type="button" onclick="setAmount(60)" class="bg-amber-50 text-amber-800 text-xs py-1.5 rounded-lg border border-amber-200 font-semibold active:bg-amber-200">60.-</button>
+                        <button type="button" onclick="setAmount(100)" class="bg-amber-50 text-amber-800 text-xs py-1.5 rounded-lg border border-amber-200 font-semibold active:bg-amber-200">100.-</button>
+                        <button type="button" onclick="setAmount(120)" class="bg-amber-50 text-amber-800 text-xs py-1.5 rounded-lg border border-amber-200 font-semibold active:bg-amber-200">120.-</button>
+                        <button type="button" onclick="setAmount(140)" class="bg-amber-50 text-amber-800 text-xs py-1.5 rounded-lg border border-amber-200 font-semibold active:bg-amber-200">140.-</button>
+                    </div>
+                </div>
+
+                <button type="button" onclick="saveRecord()" class="w-full py-3.5 bg-gradient-to-r from-orange-400 to-amber-500 text-white font-bold rounded-2xl shadow-md hover:opacity-95 active:scale-98 transition-all mt-2">
+                    บันทึกรายการ
+                </button>
             </div>
         </div>
-    </div>
-</div>
 
-<script>
-    let currentUser = 'โอภาส';
+        <!-- แท็บ 2: หน้ารายงาน & พิมพ์ A4 -->
+        <div id="tab-report" class="hidden">
+            <div class="no-print flex justify-between items-center mb-4 bg-white p-3 rounded-2xl shadow-sm border border-gray-100">
+                <div class="text-sm font-bold text-gray-700">
+                    ชื่อ: <span id="report-user-name" class="text-orange-600">โอภาส</span>
+                </div>
+                <div class="flex gap-2">
+                    <button type="button" onclick="window.print()" class="bg-gray-800 text-white text-xs px-3 py-2 rounded-xl font-bold flex items-center gap-1 shadow-sm hover:bg-black">
+                        🖨️ แชร์ / พิมพ์ A4
+                    </button>
+                </div>
+            </div>
 
-    // ฟังก์ชันคำนวณและรีเซ็ตข้อมูลเมื่อเข้าสู่รอบวันที่ 24
-    function checkAndResetCycle() {
-        const today = new Date();
-        let year = today.getFullYear();
-        let month = today.getMonth() + 1;
-        if (today.getDate() >= 24) month += 1;
-        
-        const currentCycle = `${year}-${String(month).padStart(2, '0')}`;
-        const savedCycle = localStorage.getItem('doc_current_cycle');
+            <div id="report-content" class="page-a4">
+                <div id="report-list-container"></div>
+            </div>
+        </div>
 
-        if (savedCycle && savedCycle !== currentCycle) {
-            localStorage.removeItem('doc_records');
-        }
-        localStorage.setItem('doc_current_cycle', currentCycle);
-    }
+    </main>
 
-    checkAndResetCycle();
-    let records = JSON.parse(localStorage.getItem('doc_records') || '[]');
-    document.getElementById('doc-date').valueAsDate = new Date();
+    <!-- JavaScript สคริปต์การทำงานทั้งหมด -->
+    <script>
+        let currentUser = 'โอภาส';
+        const defaultTags = ['สามแยก', 'ไปรษณีย์', 'ปากคลองตลาด', 'กรุ๊ป', 'สรรพากร', 'ร้านเป็ดเล็ก', 'สะพานพุทธ', 'ขนมหวาน', 'ร้านหมูทอง (ตึกเก่า)', 'ประตูน้ำ'];
 
-    function setUser(name) {
-        currentUser = name;
-        document.getElementById('current-user-display').innerText = name;
-        document.querySelectorAll('.btn-user').forEach(btn => {
-            btn.classList.toggle('active', btn.innerText === name);
-        });
-        renderReport();
-    }
+        document.getElementById('input-date').valueAsDate = new Date();
 
-    function switchTab(tab) {
-        if(tab === 'form') {
-            document.getElementById('tab-form').style.display = 'block';
-            document.getElementById('tab-report').style.display = 'none';
-            document.getElementById('tab-form-btn').classList.add('active');
-            document.getElementById('tab-report-btn').classList.remove('active');
-        } else {
-            document.getElementById('tab-form').style.display = 'none';
-            document.getElementById('tab-report').style.display = 'block';
-            document.getElementById('tab-report-btn').classList.add('active');
-            document.getElementById('tab-form-btn').classList.remove('active');
-            renderReport();
-        }
-    }
-
-    function saveData() {
-        const dateInput = document.getElementById('doc-date').value;
-        const location = document.getElementById('doc-location').value;
-        const time = document.getElementById('doc-time').value;
-        const amount = document.getElementById('doc-amount').value;
-
-        if(!dateInput || !location || !amount) {
-            alert('กรุณากรอกข้อมูลให้ครบถ้วน');
-            return;
+        function getRecords() {
+            return JSON.parse(localStorage.getItem('doc_track_records') || '[]');
         }
 
-        const d = new Date(dateInput);
-        const day = String(d.getDate()).padStart(2, '0');
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const year = String(d.getFullYear() + 43).slice(-2);
-
-        records.push({
-            id: Date.now(),
-            user: currentUser,
-            date: `${day}/${month}/${year}`,
-            location: location,
-            time: time,
-            amount: parseFloat(amount)
-        });
-
-        localStorage.setItem('doc_records', JSON.stringify(records));
-        alert('บันทึกสำเร็จ');
-        
-        document.getElementById('doc-location').value = '';
-        document.getElementById('doc-time').value = '';
-        document.getElementById('doc-amount').value = '';
-    }
-
-    function deleteItem(id) {
-        if(confirm('ลบรายการนี้หรือไม่?')) {
-            records = records.filter(item => item.id !== id);
-            localStorage.setItem('doc_records', JSON.stringify(records));
-            renderReport();
-        }
-    }
-
-    function clearUserRecords() {
-        if(confirm(`ต้องการลบข้อมูลทั้งหมดของ "${currentUser}" หรือไม่?`)) {
-            records = records.filter(item => item.user !== currentUser);
-            localStorage.setItem('doc_records', JSON.stringify(records));
-            renderReport();
-        }
-    }
-
-    function renderReport() {
-        document.getElementById('rpt-user-name').innerText = currentUser;
-        const tbody = document.getElementById('report-table-body');
-        tbody.innerHTML = '';
-
-        const userRecords = records.filter(r => r.user === currentUser);
-        
-        if (userRecords.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" class="no-data">ยังไม่มีข้อมูลในระบบ</td></tr>`;
-            document.getElementById('grand-total').innerText = '0.-';
-            return;
+        function saveRecords(data) {
+            localStorage.setItem('doc_track_records', JSON.stringify(data));
         }
 
-        const grouped = {};
-        userRecords.forEach(r => {
-            if(!grouped[r.date]) grouped[r.date] = [];
-            grouped[r.date].push(r);
-        });
+        // ระบบจัดคำนวณแท็กสถานที่ด่วน (ใช้บ่อย & ล่าสุด)
+        function renderDynamicTags() {
+            const records = getRecords().filter(r => r.user === currentUser);
+            const container = document.getElementById('dynamic-tags-container');
+            container.innerHTML = '';
 
-        let grandTotal = 0;
+            const tagStats = {};
 
-        for (const date in grouped) {
-            const items = grouped[date];
-            let dayTotal = 0;
-
-            items.forEach((item, index) => {
-                const tr = document.createElement('tr');
-                dayTotal += item.amount;
-                grandTotal += item.amount;
-
-                tr.innerHTML = `
-                    <td class="text-center">${index === 0 ? date : ''}</td>
-                    <td>
-                        ${index + 1}. ${item.location}
-                        <button class="btn-del-item" onclick="deleteItem(${item.id})">ลบ</button>
-                    </td>
-                    <td class="text-center">${item.time}</td>
-                    <td class="text-right">${item.amount}.-</td>
-                `;
-                tbody.appendChild(tr);
+            defaultTags.forEach((tag, index) => {
+                tagStats[tag] = { count: 1, lastUsed: index };
             });
 
-            const totalTr = document.createElement('tr');
-            totalTr.innerHTML = `
-                <td></td>
-                <td></td>
-                <td class="text-center font-bold">TOTAL</td>
-                <td class="text-right font-bold" style="text-decoration: underline;">${dayTotal}.-</td>
-            `;
-            tbody.appendChild(totalTr);
+            records.forEach(r => {
+                if (r.location) {
+                    const places = r.location.split(',').map(p => p.trim());
+                    places.forEach(p => {
+                        if (p) {
+                            if (!tagStats[p]) {
+                                tagStats[p] = { count: 1, lastUsed: r.id };
+                            } else {
+                                tagStats[p].count += 1;
+                                tagStats[p].lastUsed = Math.max(tagStats[p].lastUsed, r.id);
+                            }
+                        }
+                    });
+                }
+            });
+
+            const sortedTags = Object.keys(tagStats).sort((a, b) => {
+                if (tagStats[b].lastUsed !== tagStats[a].lastUsed) {
+                    return tagStats[b].lastUsed - tagStats[a].lastUsed;
+                }
+                return tagStats[b].count - tagStats[a].count;
+            });
+
+            const topTags = sortedTags.slice(0, 10);
+            topTags.forEach(tag => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'tag-btn text-xs px-2.5 py-1 rounded-full';
+                btn.innerText = tag;
+                btn.onclick = () => addTag(tag);
+                container.appendChild(btn);
+            });
         }
 
-        document.getElementById('grand-total').innerText = `${grandTotal.toLocaleString()}.-`;
-    }
+        function setUser(name) {
+            currentUser = name;
+            document.getElementById('form-user-title').innerText = name;
+            document.getElementById('report-user-name').innerText = name;
+            
+            const btns = document.querySelectorAll('.user-btn');
+            btns.forEach(btn => {
+                if(btn.innerText === name) {
+                    btn.className = "user-btn px-4 py-1 rounded-full text-xs font-semibold bg-white text-orange-600 shadow-sm";
+                } else {
+                    btn.className = "user-btn px-4 py-1 rounded-full text-xs font-semibold bg-white/40 text-white";
+                }
+            });
 
-    function downloadPDF() {
-        const delBtns = document.querySelectorAll('.btn-del-item');
-        delBtns.forEach(b => b.style.display = 'none');
+            renderDynamicTags();
+            renderReport();
+        }
 
-        const element = document.getElementById('pdf-content');
-        const opt = {
-          margin: 0.5,
-          filename: `รายงาน_${currentUser}.pdf`,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2 },
-          jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
-        };
+        function switchTab(tab) {
+            const formTab = document.getElementById('tab-form');
+            const reportTab = document.getElementById('tab-report');
+            const formBtn = document.getElementById('tab-form-btn');
+            const reportBtn = document.getElementById('tab-report-btn');
 
-        html2pdf().set(opt).from(element).save().then(() => {
-            delBtns.forEach(b => b.style.display = 'inline-block');
-        });
-    }
-</script>
+            if (tab === 'form') {
+                formTab.classList.remove('hidden');
+                reportTab.classList.add('hidden');
+                formBtn.className = "flex-1 py-2 rounded-full text-sm font-bold text-white bg-orange-500 shadow-md transition-all";
+                reportBtn.className = "flex-1 py-2 rounded-full text-sm font-bold text-gray-500 transition-all";
+                renderDynamicTags();
+            } else {
+                formTab.classList.add('hidden');
+                reportTab.classList.remove('hidden');
+                reportBtn.className = "flex-1 py-2 rounded-full text-sm font-bold text-white bg-orange-500 shadow-md transition-all";
+                formBtn.className = "flex-1 py-2 rounded-full text-sm font-bold text-gray-500 transition-all";
+                renderReport();
+            }
+        }
 
+        function addTag(text) {
+            const input = document.getElementById('input-location');
+            if (input.value) {
+                input.value += ', ' + text;
+            } else {
+                input.value = text;
+            }
+        }
+
+        function setAmount(val) {
+            document.getElementById('input-amount').value = val;
+        }
+
+        function saveRecord() {
+            const dateVal = document.getElementById('input-date').value;
+            const locationVal = document.getElementById('input-location').value.trim();
+            const timeStart = document.getElementById('input-time-start').value;
+            const timeEnd = document.getElementById('input-time-end').value;
+            const amountVal = document.getElementById('input-amount').value;
+
+            if (!dateVal || !locationVal || !amountVal) {
+                alert('กรุณากรอกวันที่ ชื่องาน/สถานที่ และจำนวนเงินให้ครบถ้วนครับ');
+                return;
+            }
+
+            const d = new Date(dateVal);
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const yearBE = String(d.getFullYear() + 543).slice(-2);
+            const formattedDate = `${day}/${month}/${yearBE}`;
+
+            let timeStr = '';
+            if (timeStart && timeEnd) {
+                timeStr = `${timeStart}-${timeEnd} น.`;
+            } else if (timeStart) {
+                timeStr = `${timeStart} น.`;
+            }
+
+            const newRecord = {
+                id: Date.now(),
+                user: currentUser,
+                date: formattedDate,
+                rawDate: dateVal,
+                location: locationVal,
+                time: timeStr,
+                amount: parseFloat(amountVal)
+            };
+
+            const records = getRecords();
+            records.push(newRecord);
+            saveRecords(records);
+
+            alert('บันทึกข้อมูลเรียบร้อยแล้ว!');
+
+            document.getElementById('input-location').value = '';
+            document.getElementById('input-time-start').value = '';
+            document.getElementById('input-time-end').value = '';
+            document.getElementById('input-amount').value = '';
+
+            renderDynamicTags();
+        }
+
+        function deleteRecord(id) {
+            if (confirm('คุณต้องการลบรายการนี้ใช่หรือไม่?')) {
+                let records = getRecords();
+                records = records.filter(r => r.id !== id);
+                saveRecords(records);
+                renderReport();
+                renderDynamicTags();
+            }
+        }
+
+        function renderReport() {
+            const container = document.getElementById('report-list-container');
+            container.innerHTML = '';
+
+            const records = getRecords().filter(r => r.user === currentUser);
+
+            if (records.length === 0) {
+                container.innerHTML = `<div class="text-center py-10 text-gray-400 font-medium">ยังไม่มีข้อมูลการลงงานของ ${currentUser}</div>`;
+                return;
+            }
+
+            const grouped = {};
+            records.forEach(r => {
+                if (!grouped[r.date]) grouped[r.date] = [];
+                grouped[r.date].push(r);
+            });
+
+            for (const dateStr in grouped) {
+                const dayItems = grouped[dateStr];
+                let dayTotal = 0;
+
+                const dayCard = document.createElement('div');
+                dayCard.className = 'day-card';
+
+                let itemsHTML = '';
+                dayItems.forEach((item, index) => {
+                    dayTotal += item.amount;
+                    itemsHTML += `
+                        <div class="flex justify-between items-center py-2.5 px-4 border-b border-gray-100 last:border-0 text-sm">
+                            <div class="pr-2">
+                                <div class="font-bold text-gray-800">${index + 1}. ${item.location}</div>
+                                ${item.time ? `<div class="text-xs text-gray-400">${item.time}</div>` : ''}
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-gray-800">${item.amount}.-</span>
+                                <button type="button" onclick="deleteRecord(${item.id})" class="no-print text-red-400 text-xs hover:text-red-600 px-1">✕</button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                dayCard.innerHTML = `
+                    <div class="day-header">${dateStr}</div>
+                    <div>${itemsHTML}</div>
+                    <div class="bg-amber-50/60 px-4 py-2 flex justify-between items-center text-sm border-t border-amber-100 font-bold">
+                        <span class="text-gray-600">TOTAL</span>
+                        <span class="text-orange-600 underline">${dayTotal}.-</span>
+                    </div>
+                `;
+
+                container.appendChild(dayCard);
+            }
+        }
+
+        renderDynamicTags();
+        renderReport();
+    </script>
 </body>
 </html>
