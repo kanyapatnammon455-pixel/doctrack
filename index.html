@@ -193,14 +193,14 @@
                 </div>
             </div>
 
-            <!-- ส่วนควบคุมเฉพาะคุณ (Admin Reset Zone) -->
+            <!-- ส่วนควบคุมเฉพาะคุณ (Admin Reset All Zone) -->
             <div id="admin-reset-container" class="no-print mb-4 p-3 bg-red-50 border border-red-200 rounded-2xl flex justify-between items-center hidden">
                 <div class="text-xs text-red-700">
                     <span class="font-bold block">⚙️ จัดการข้อมูลรอบเดือน</span>
-                    <span class="text-[10px] text-red-500">เริ่มรอบวันที่ 24 ถึง 23 ของเดือน</span>
+                    <span class="text-[10px] text-red-500">รอบวันที่ 24 ถึง 23 ของทุกเดือน</span>
                 </div>
                 <button type="button" onclick="resetMonthlyData()" class="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1.5 rounded-xl font-bold shadow-sm active:scale-95 transition-all">
-                    🔴 รีเซ็ตข้อมูลรอบนี้
+                    🔴 รีเซ็ตทั้งหมด
                 </button>
             </div>
 
@@ -218,7 +218,7 @@
     </main>
 
     <script>
-        // *** กำหนดชื่อผู้ใช้ที่มีสิทธิ์เห็นปุ่มรีเซ็ต (เปลี่ยนชื่อนี้ตามต้องการได้เลยครับ) ***
+        // กำหนดชื่อผู้ใช้ที่มีสิทธิ์เห็นปุ่มรีเซ็ตทั้งหมด
         const ADMIN_USER = 'โอภาส'; 
 
         let currentUser = 'โอภาส';
@@ -399,16 +399,14 @@
             }
         }
 
-        // *** ฟังก์ชันรีเซ็ตข้อมูลประจำเดือนสำหรับคุณ ***
+        // *** ฟังก์ชันรีเซ็ตข้อมูลทั้งหมดของทุกคนในระบบ ***
         function resetMonthlyData() {
-            const confirmReset = confirm(`⚠️ ยืนยันการรีเซ็ตข้อมูลของ "${currentUser}" ใช่หรือไม่?\n\nการกระทำนี้จะลบรายการที่บันทึกไว้ทั้งหมดเพื่อเริ่มรอบเดือนใหม่ (24 ถึง 23) และไม่สามารถย้อนกลับได้!`);
+            const confirmReset = confirm(`⚠️ ยืนยันการรีเซ็ตข้อมูลทั้งหมดของทุกคนใช่หรือไม่?\n\nการกดปุ่มนี้จะลบรายการบันทึกของทุกคนในระบบเพื่อเริ่มรอบเดือนใหม่ (24-23) และไม่สามารถกู้คืนได้!`);
             
             if (confirmReset) {
-                let records = getRecords();
-                // ลบเฉพาะรายการที่เป็นของผู้ใช้ปัจจุบัน
-                records = records.filter(r => r.user !== currentUser);
-                saveRecords(records);
-                alert(`ลบข้อมูลของ ${currentUser} เรียบร้อยแล้ว พร้อมเริ่มรอบเดือนใหม่ครับ!`);
+                // ลบข้อมูลทั้งหมดจาก LocalStorage
+                saveRecords([]);
+                alert(`ล้างข้อมูลทั้งหมดของทุกคนเรียบร้อยแล้ว พร้อมเริ่มรอบเดือนใหม่ครับ!`);
                 renderReport();
                 renderDynamicTags();
             }
@@ -487,7 +485,6 @@
             container.appendChild(grandTotalDiv);
         }
 
-        // เริ่มต้นตรวจสอบสิทธิ์ของ User ปัจจุบัน
         setUser(currentUser);
     </script>
 </body>
