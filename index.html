@@ -4,15 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <!-- ป้องกันไม่ให้เบราว์เซอร์จำหน้าเก่า (No Cache) -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
 
     <title>DocTrack Pro - บันทึกค่าเที่ยวแผนกส่งเอกสาร</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: Sarabun -->
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
@@ -52,7 +49,6 @@
             font-size: 0.9rem;
         }
 
-        /* รูปแบบเอกสารสำหรับสั่งพิมพ์ออกกระดาษ A4 */
         @media print {
             @page {
                 size: A4 portrait;
@@ -100,7 +96,7 @@
 </head>
 <body class="min-h-screen pb-10">
 
-    <!-- Header (จะถูกซ่อนเวลาสั่งพิมพ์) -->
+    <!-- Header -->
     <header class="header-bg no-print p-4 text-center rounded-b-3xl shadow-md sticky top-0 z-10">
         <div class="inline-block bg-white/20 px-6 py-1.5 rounded-full text-white font-bold text-lg backdrop-blur-sm shadow-inner">
             บันทึกค่าเที่ยวแผนกส่งเอกสาร
@@ -115,7 +111,7 @@
         </div>
     </header>
 
-    <!-- ปุ่มสลับแท็บ (จะถูกซ่อนเวลาสั่งพิมพ์) -->
+    <!-- ปุ่มสลับแท็บ -->
     <div class="max-w-md mx-auto p-4 no-print">
         <div class="flex bg-white rounded-full p-1 shadow-sm mb-4">
             <button id="tab-form-btn" onclick="switchTab('form')" class="flex-1 py-2 rounded-full text-sm font-bold text-white bg-orange-500 shadow-md transition-all">
@@ -186,7 +182,6 @@
 
         <!-- แท็บ 2: หน้ารายงาน & พิมพ์ A4 -->
         <div id="tab-report" class="hidden">
-            <!-- ส่วนปุ่มกดบนหน้าจอ -->
             <div class="no-print flex justify-between items-center mb-4 bg-white p-3 rounded-2xl shadow-sm border border-gray-100">
                 <div class="text-sm font-bold text-gray-700">
                     ชื่อ: <span id="report-user-name" class="text-orange-600">โอภาส</span>
@@ -196,6 +191,17 @@
                         🖨️ แชร์ / พิมพ์ A4
                     </button>
                 </div>
+            </div>
+
+            <!-- ส่วนควบคุมเฉพาะคุณ (Admin Reset Zone) -->
+            <div id="admin-reset-container" class="no-print mb-4 p-3 bg-red-50 border border-red-200 rounded-2xl flex justify-between items-center hidden">
+                <div class="text-xs text-red-700">
+                    <span class="font-bold block">⚙️ จัดการข้อมูลรอบเดือน</span>
+                    <span class="text-[10px] text-red-500">เริ่มรอบวันที่ 24 ถึง 23 ของเดือน</span>
+                </div>
+                <button type="button" onclick="resetMonthlyData()" class="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1.5 rounded-xl font-bold shadow-sm active:scale-95 transition-all">
+                    🔴 รีเซ็ตข้อมูลรอบนี้
+                </button>
             </div>
 
             <!-- หัวกระดาษที่จะแสดงเฉพาะตอนพิมพ์งานออกกระดาษ A4 -->
@@ -212,6 +218,9 @@
     </main>
 
     <script>
+        // *** กำหนดชื่อผู้ใช้ที่มีสิทธิ์เห็นปุ่มรีเซ็ต (เปลี่ยนชื่อนี้ตามต้องการได้เลยครับ) ***
+        const ADMIN_USER = 'โอภาส'; 
+
         let currentUser = 'โอภาส';
         const defaultTags = ['สามแยก', 'ไปรษณีย์', 'ปากคลองตลาด', 'กรุ๊ป', 'สรรพากร', 'ร้านเป็ดเล็ก', 'สะพานพุทธ', 'ขนมหวาน', 'ร้านหมูทอง (ตึกเก่า)', 'ประตูน้ำ'];
 
@@ -285,6 +294,14 @@
                 }
             });
 
+            // ตรวจสอบสิทธิ์ว่าใช่บัญชีของคุณหรือไม่ เพื่อแสดงปุ่มรีเซ็ต
+            const adminContainer = document.getElementById('admin-reset-container');
+            if (currentUser === ADMIN_USER) {
+                adminContainer.classList.remove('hidden');
+            } else {
+                adminContainer.classList.add('hidden');
+            }
+
             renderDynamicTags();
             renderReport();
         }
@@ -352,7 +369,7 @@
                 id: Date.now(),
                 user: currentUser,
                 date: formattedDate,
-                rawDate: dateVal, // เก็บค่าวันที่เดิม YYYY-MM-DD ไว้ใช้เรียงลำดับ
+                rawDate: dateVal,
                 location: locationVal,
                 time: timeStr,
                 amount: parseFloat(amountVal)
@@ -382,6 +399,21 @@
             }
         }
 
+        // *** ฟังก์ชันรีเซ็ตข้อมูลประจำเดือนสำหรับคุณ ***
+        function resetMonthlyData() {
+            const confirmReset = confirm(`⚠️ ยืนยันการรีเซ็ตข้อมูลของ "${currentUser}" ใช่หรือไม่?\n\nการกระทำนี้จะลบรายการที่บันทึกไว้ทั้งหมดเพื่อเริ่มรอบเดือนใหม่ (24 ถึง 23) และไม่สามารถย้อนกลับได้!`);
+            
+            if (confirmReset) {
+                let records = getRecords();
+                // ลบเฉพาะรายการที่เป็นของผู้ใช้ปัจจุบัน
+                records = records.filter(r => r.user !== currentUser);
+                saveRecords(records);
+                alert(`ลบข้อมูลของ ${currentUser} เรียบร้อยแล้ว พร้อมเริ่มรอบเดือนใหม่ครับ!`);
+                renderReport();
+                renderDynamicTags();
+            }
+        }
+
         function renderReport() {
             const container = document.getElementById('report-list-container');
             container.innerHTML = '';
@@ -393,7 +425,7 @@
                 return;
             }
 
-            // *** ขั้นตอนสำคัญ: จัดเรียงข้อมูลตามวันที่ (rawDate) จากน้อยไปมาก ***
+            // จัดเรียงข้อมูลตามวันที่ (rawDate) จากอดีตไปหาปัจจุบัน
             records.sort((a, b) => {
                 if (a.rawDate && b.rawDate) {
                     return a.rawDate.localeCompare(b.rawDate);
@@ -446,7 +478,6 @@
                 container.appendChild(dayCard);
             }
 
-            // ยอดรวมทั้งหมด (TOTAL) ด้านล่างสุด
             const grandTotalDiv = document.createElement('div');
             grandTotalDiv.className = 'flex justify-between items-center pt-4 pb-6 px-2 text-base font-bold text-gray-900 border-t-2 border-dashed border-gray-300 mt-6';
             grandTotalDiv.innerHTML = `
@@ -456,8 +487,8 @@
             container.appendChild(grandTotalDiv);
         }
 
-        renderDynamicTags();
-        renderReport();
+        // เริ่มต้นตรวจสอบสิทธิ์ของ User ปัจจุบัน
+        setUser(currentUser);
     </script>
 </body>
 </html>
