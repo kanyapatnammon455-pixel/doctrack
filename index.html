@@ -187,7 +187,7 @@
                     ชื่อ: <span id="report-user-name" class="text-orange-600">โอภาส</span>
                 </div>
                 <div class="flex gap-2">
-                    <button type="button" onclick="window.print()" class="bg-gray-800 text-white text-xs px-3 py-2 rounded-xl font-bold flex items-center gap-1 shadow-sm hover:bg-black">
+                    <button type="button" onclick="handlePrint()" class="bg-gray-800 text-white text-xs px-3 py-2 rounded-xl font-bold flex items-center gap-1 shadow-sm hover:bg-black">
                         🖨️ แชร์ / พิมพ์ A4
                     </button>
                 </div>
@@ -218,9 +218,7 @@
     </main>
 
     <script>
-        // กำหนดชื่อผู้ใช้ที่มีสิทธิ์เห็นปุ่มรีเซ็ตทั้งหมด
         const ADMIN_USER = 'โอภาส'; 
-
         let currentUser = 'โอภาส';
         const defaultTags = ['สามแยก', 'ไปรษณีย์', 'ปากคลองตลาด', 'กรุ๊ป', 'สรรพากร', 'ร้านเป็ดเล็ก', 'สะพานพุทธ', 'ขนมหวาน', 'ร้านหมูทอง (ตึกเก่า)', 'ประตูน้ำ'];
 
@@ -240,7 +238,6 @@
             container.innerHTML = '';
 
             const tagStats = {};
-
             defaultTags.forEach((tag, index) => {
                 tagStats[tag] = { count: 1, lastUsed: index };
             });
@@ -268,8 +265,7 @@
                 return tagStats[b].count - tagStats[a].count;
             });
 
-            const topTags = sortedTags.slice(0, 10);
-            topTags.forEach(tag => {
+            sortedTags.slice(0, 10).forEach(tag => {
                 const btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'tag-btn text-xs px-2.5 py-1 rounded-full';
@@ -285,8 +281,7 @@
             document.getElementById('report-user-name').innerText = name;
             document.getElementById('print-user-name').innerText = name;
             
-            const btns = document.querySelectorAll('.user-btn');
-            btns.forEach(btn => {
+            document.querySelectorAll('.user-btn').forEach(btn => {
                 if(btn.innerText === name) {
                     btn.className = "user-btn px-4 py-1 rounded-full text-xs font-semibold bg-white text-orange-600 shadow-sm";
                 } else {
@@ -294,7 +289,6 @@
                 }
             });
 
-            // ตรวจสอบสิทธิ์ว่าใช่บัญชีของคุณหรือไม่ เพื่อแสดงปุ่มรีเซ็ต
             const adminContainer = document.getElementById('admin-reset-container');
             if (currentUser === ADMIN_USER) {
                 adminContainer.classList.remove('hidden');
@@ -329,11 +323,7 @@
 
         function addTag(text) {
             const input = document.getElementById('input-location');
-            if (input.value) {
-                input.value += ', ' + text;
-            } else {
-                input.value = text;
-            }
+            input.value = input.value ? input.value + ', ' + text : text;
         }
 
         function setAmount(val) {
@@ -353,19 +343,14 @@
             }
 
             const d = new Date(dateVal);
-            const day = String(d.getDate()).padStart(2, '0');
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const yearBE = String(d.getFullYear() + 543).slice(-2);
-            const formattedDate = `${day}/${month}/${yearBE}`;
+            const formattedDate = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getFullYear() + 543).slice(-2)}`;
 
             let timeStr = '';
-            if (timeStart && timeEnd) {
-                timeStr = `${timeStart}-${timeEnd} น.`;
-            } else if (timeStart) {
-                timeStr = `${timeStart} น.`;
-            }
+            if (timeStart && timeEnd) timeStr = `${timeStart}-${timeEnd} น.`;
+            else if (timeStart) timeStr = `${timeStart} น.`;
 
-            const newRecord = {
+            const records = getRecords();
+            records.push({
                 id: Date.now(),
                 user: currentUser,
                 date: formattedDate,
@@ -373,42 +358,57 @@
                 location: locationVal,
                 time: timeStr,
                 amount: parseFloat(amountVal)
-            };
-
-            const records = getRecords();
-            records.push(newRecord);
+            });
             saveRecords(records);
 
             alert('บันทึกข้อมูลเรียบร้อยแล้ว!');
-
             document.getElementById('input-location').value = '';
             document.getElementById('input-time-start').value = '';
             document.getElementById('input-time-end').value = '';
             document.getElementById('input-amount').value = '';
-
             renderDynamicTags();
         }
 
         function deleteRecord(id) {
             if (confirm('คุณต้องการลบรายการนี้ใช่หรือไม่?')) {
-                let records = getRecords();
-                records = records.filter(r => r.id !== id);
+                let records = getRecords().filter(r => r.id !== id);
                 saveRecords(records);
                 renderReport();
                 renderDynamicTags();
             }
         }
 
-        // *** ฟังก์ชันรีเซ็ตข้อมูลทั้งหมดของทุกคนในระบบ ***
         function resetMonthlyData() {
-            const confirmReset = confirm(`⚠️ ยืนยันการรีเซ็ตข้อมูลทั้งหมดของทุกคนใช่หรือไม่?\n\nการกดปุ่มนี้จะลบรายการบันทึกของทุกคนในระบบเพื่อเริ่มรอบเดือนใหม่ (24-23) และไม่สามารถกู้คืนได้!`);
-            
-            if (confirmReset) {
-                // ลบข้อมูลทั้งหมดจาก LocalStorage
+            if (confirm(`⚠️ ยืนยันการรีเซ็ตข้อมูลทั้งหมดของทุกคนใช่หรือไม่?\n\nการกดปุ่มนี้จะลบรายการบันทึกของทุกคนในระบบเพื่อเริ่มรอบเดือนใหม่ (24-23) และไม่สามารถกู้คืนได้!`)) {
                 saveRecords([]);
                 alert(`ล้างข้อมูลทั้งหมดของทุกคนเรียบร้อยแล้ว พร้อมเริ่มรอบเดือนใหม่ครับ!`);
                 renderReport();
                 renderDynamicTags();
+            }
+        }
+
+        // *** ฟังก์ชันจัดการการพิมพ์ที่รองรับมือถือทุกเครื่อง ***
+        function handlePrint() {
+            try {
+                window.print();
+            } catch (e) {
+                // หากระบบสั่งพิมพ์ปกติไม่ได้ จะเปิดหน้าต่างเฉพาะสำหรับพิมพ์สำรอง
+                const printWindow = window.open('', '_blank');
+                if (printWindow) {
+                    printWindow.document.write(`
+                        <html>
+                            <head><title>รายงาน - ${currentUser}</title></head>
+                            <body style="font-family: sans-serif; padding: 20px;">
+                                <h2>รายงานบันทึกค่าเที่ยว: ${currentUser}</h2>
+                                ${document.getElementById('report-content').innerHTML}
+                                <script>window.print();<\/script>
+                            </body>
+                        </html>
+                    `);
+                    printWindow.document.close();
+                } else {
+                    alert('กรุณาใช้ฟังก์ชันจับภาพหน้าจอ (Screenshot) เพื่อบันทึกรายงานนี้ เนื่องจากเบราว์เซอร์ไม่อนุญาตให้เปิดหน้าต่างพิมพ์');
+                }
             }
         }
 
@@ -423,13 +423,7 @@
                 return;
             }
 
-            // จัดเรียงข้อมูลตามวันที่ (rawDate) จากอดีตไปหาปัจจุบัน
-            records.sort((a, b) => {
-                if (a.rawDate && b.rawDate) {
-                    return a.rawDate.localeCompare(b.rawDate);
-                }
-                return 0;
-            });
+            records.sort((a, b) => (a.rawDate && b.rawDate) ? a.rawDate.localeCompare(b.rawDate) : 0);
 
             const grouped = {};
             let grandTotal = 0;
