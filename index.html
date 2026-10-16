@@ -37,7 +37,7 @@
             transform: scale(0.95);
         }
 
-        /* สไตล์ตารางรายงานแบบกะทัดรัด ประหยัดหมึก ตามตัวอย่าง */
+        /* สไตล์ตารางรายงานแบบกะทัดรัด ประหยัดหมึก */
         .report-table-container {
             width: 100%;
             max-width: 500px;
@@ -45,6 +45,27 @@
             background: #ffffff;
             padding: 15px;
             border: 1px solid #d1d5db;
+        }
+
+        /* ตั้งค่าสำหรับการสั่งพิมพ์ผ่านมือถือ/เครื่องปริ้นโดยตรง */
+        @media print {
+            body {
+                background-color: #ffffff !important;
+                padding: 0 !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .report-table-container {
+                border: none !important;
+                padding: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+            @page {
+                size: A4 portrait;
+                margin: 15mm 10mm;
+            }
         }
     </style>
 </head>
@@ -134,17 +155,22 @@
             </div>
         </div>
 
-        <!-- แท็บ 2: หน้ารายงาน & ดาวน์โหลด PDF -->
+        <!-- แท็บ 2: หน้ารายงาน & ปุ่มสั่งพิมพ์ / ดาวน์โหลด PDF -->
         <div id="tab-report" class="hidden">
-            <div class="no-print mb-4 bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center">
-                <div class="text-sm font-bold text-gray-700">
-                    ชื่อ: <span id="report-user-name" class="text-orange-600">นายโอภาส</span>
+            <div class="no-print mb-4 bg-white p-3 rounded-2xl shadow-sm border border-gray-100 space-y-2">
+                <div class="text-sm font-bold text-gray-700 flex justify-between items-center">
+                    <span>ชื่อ: <span id="report-user-name" class="text-orange-600">นายโอภาส</span></span>
                 </div>
                 
-                <!-- ปุ่มส่งออกเป็นเอกสาร PDF -->
-                <button type="button" id="export-pdf-btn" onclick="exportToPDF()" class="bg-gray-800 active:bg-black text-white text-xs px-3 py-2 rounded-xl font-bold flex items-center gap-1 shadow-sm transition-all">
-                    📄 ส่งออกไฟล์ PDF
-                </button>
+                <!-- ปุ่มสั่งงาน: พิมพ์รายงานทันที และ ดาวน์โหลด PDF -->
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" onclick="window.print()" class="bg-emerald-600 active:bg-emerald-700 text-white text-xs py-2.5 rounded-xl font-bold flex justify-center items-center gap-1 shadow-sm transition-all">
+                        🖨️ พิมพ์รายงานทันที
+                    </button>
+                    <button type="button" id="export-pdf-btn" onclick="exportToPDF()" class="bg-gray-800 active:bg-black text-white text-xs py-2.5 rounded-xl font-bold flex justify-center items-center gap-1 shadow-sm transition-all">
+                        📄 ดาวน์โหลด PDF
+                    </button>
+                </div>
             </div>
 
             <!-- ส่วนควบคุมเฉพาะคุณ (Admin Reset All Zone) -->
@@ -158,7 +184,7 @@
                 </button>
             </div>
 
-            <!-- โซนรายงานที่จะถูกแปลงเป็นไฟล์ PDF (จัดกึ่งกลางและกะทัดรัดตามตัวอย่าง) -->
+            <!-- โซนรายงานที่จะถูกพิมพ์หรือแปลงเป็น PDF -->
             <div id="report-export-area" class="report-table-container">
                 <div class="text-center mb-3 pb-2 border-b border-gray-400">
                     <h1 class="text-sm font-bold text-gray-900">บันทึกใบวิ่งงานและสรุปค่าเที่ยว แผนกส่งเอกสาร</h1>
@@ -344,10 +370,7 @@
             }
         }
 
-        // *** ฟังก์ชันคำนวณรอบงานอัตโนมัติ (24 ถึง 23) ***
-        function updateCycleText(dateStrList) {
-            if (!dateStrList || dateStrList.length === 0) return;
-            // ใช้รอบงานตามวันที่จริงจากรายการแรกและรายการสุดท้าย หรือคำนวณจากวันที่ปัจจุบัน
+        function updateCycleText() {
             const now = new Date();
             let y = now.getFullYear();
             let m = now.getMonth();
@@ -363,10 +386,9 @@
             document.getElementById('print-cycle-text').innerText = `รอบงาน ${fmt(startD)} - ${fmt(endD)}`;
         }
 
-        // *** ฟังก์ชันแปลงรายงานเป็น PDF แบบกะทัดรัด ***
         function exportToPDF() {
             const btn = document.getElementById('export-pdf-btn');
-            btn.innerText = '⏳ กำลังสร้าง PDF...';
+            btn.innerText = '⏳ กำลังสร้าง...';
             btn.disabled = true;
 
             const deleteBtns = document.querySelectorAll('.delete-btn');
@@ -375,7 +397,7 @@
             const element = document.getElementById('report-export-area');
 
             const opt = {
-                margin:       [15, 10, 15, 10], // ขอบบน 15 มม. จัดกึ่งกลางพอดี
+                margin:       [15, 10, 15, 10],
                 filename:     `รายงานค่าเที่ยว_${currentUser}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { scale: 2 },
@@ -384,11 +406,11 @@
 
             html2pdf().set(opt).from(element).save().then(() => {
                 deleteBtns.forEach(b => b.style.display = 'inline-block');
-                btn.innerText = '📄 ส่งออกไฟล์ PDF';
+                btn.innerText = '📄 ดาวน์โหลด PDF';
                 btn.disabled = false;
             }).catch(err => {
                 deleteBtns.forEach(b => b.style.display = 'inline-block');
-                btn.innerText = '📄 ส่งออกไฟล์ PDF';
+                btn.innerText = '📄 ดาวน์โหลด PDF';
                 btn.disabled = false;
                 alert('เกิดข้อผิดพลาดในการสร้าง PDF');
             });
@@ -406,7 +428,7 @@
             }
 
             records.sort((a, b) => (a.rawDate && b.rawDate) ? a.rawDate.localeCompare(b.rawDate) : 0);
-            updateCycleText(records);
+            updateCycleText();
 
             const grouped = {};
             let grandTotal = 0;
