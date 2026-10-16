@@ -12,7 +12,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- นำเข้าไลบรารี html2pdf สำหรับแปลงหน้าเว็บเป็นเอกสาร PDF A4 -->
+    <!-- ไลบรารี html2pdf สำหรับแปลงหน้าเว็บเป็นเอกสาร PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
@@ -47,24 +47,30 @@
             border: 1px solid #d1d5db;
         }
 
-        /* ตั้งค่าสำหรับการสั่งพิมพ์ผ่านมือถือ/เครื่องปริ้นโดยตรง */
+        /* CSS พิเศษสำหรับการสั่งพิมพ์ผ่านเครื่องปริ้นเตอร์ */
         @media print {
-            body {
-                background-color: #ffffff !important;
-                padding: 0 !important;
+            body * {
+                visibility: hidden;
             }
-            .no-print {
-                display: none !important;
+            #report-export-area, #report-export-area * {
+                visibility: visible;
             }
-            .report-table-container {
-                border: none !important;
-                padding: 0 !important;
+            #report-export-area {
+                position: absolute;
+                left: 0;
+                top: 0;
                 width: 100% !important;
                 max-width: 100% !important;
+                border: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .delete-btn, .no-print {
+                display: none !important;
             }
             @page {
                 size: A4 portrait;
-                margin: 15mm 10mm;
+                margin: 10mm;
             }
         }
     </style>
@@ -162,9 +168,9 @@
                     <span>ชื่อ: <span id="report-user-name" class="text-orange-600">นายโอภาส</span></span>
                 </div>
                 
-                <!-- ปุ่มสั่งงาน: พิมพ์รายงานทันที และ ดาวน์โหลด PDF -->
+                <!-- ปุ่มสั่งงาน -->
                 <div class="grid grid-cols-2 gap-2">
-                    <button type="button" onclick="window.print()" class="bg-emerald-600 active:bg-emerald-700 text-white text-xs py-2.5 rounded-xl font-bold flex justify-center items-center gap-1 shadow-sm transition-all">
+                    <button type="button" onclick="printReport()" class="bg-emerald-600 active:bg-emerald-700 text-white text-xs py-2.5 rounded-xl font-bold flex justify-center items-center gap-1 shadow-sm transition-all">
                         🖨️ พิมพ์รายงานทันที
                     </button>
                     <button type="button" id="export-pdf-btn" onclick="exportToPDF()" class="bg-gray-800 active:bg-black text-white text-xs py-2.5 rounded-xl font-bold flex justify-center items-center gap-1 shadow-sm transition-all">
@@ -173,7 +179,7 @@
                 </div>
             </div>
 
-            <!-- ส่วนควบคุมเฉพาะคุณ (Admin Reset All Zone) -->
+            <!-- ส่วนควบคุมเฉพาะ Admin -->
             <div id="admin-reset-container" class="no-print mb-4 p-3 bg-red-50 border border-red-200 rounded-2xl flex justify-between items-center hidden">
                 <div class="text-xs text-red-700">
                     <span class="font-bold block">⚙️ จัดการข้อมูลรอบเดือน</span>
@@ -184,7 +190,7 @@
                 </button>
             </div>
 
-            <!-- โซนรายงานที่จะถูกพิมพ์หรือแปลงเป็น PDF -->
+            <!-- โซนรายงาน -->
             <div id="report-export-area" class="report-table-container">
                 <div class="text-center mb-3 pb-2 border-b border-gray-400">
                     <h1 class="text-sm font-bold text-gray-900">บันทึกใบวิ่งงานและสรุปค่าเที่ยว แผนกส่งเอกสาร</h1>
@@ -384,6 +390,16 @@
             }
             const fmt = (d) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getFullYear() + 543).slice(-2)}`;
             document.getElementById('print-cycle-text').innerText = `รอบงาน ${fmt(startD)} - ${fmt(endD)}`;
+        }
+
+        // ฟังก์ชันสั่งพิมพ์เอกสารสำหรับมือถือ
+        function printReport() {
+            // ตรวจสอบเบราว์เซอร์ LINE
+            const isLine = navigator.userAgent.indexOf('Line') > -1;
+            if (isLine) {
+                alert('โปรดเปิดลิงก์นี้ในเบราว์เซอร์ Chrome หรือ Safari (กดจุด 3 จุดมุมขวาบน -> เลือก Open in Chrome/Safari) เพื่อให้ระบบสั่งพิมพ์ทำงานได้อย่างสมบูรณ์ครับ');
+            }
+            window.print();
         }
 
         function exportToPDF() {
