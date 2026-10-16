@@ -12,7 +12,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- ไลบรารี html2pdf สำหรับแปลงหน้าเว็บเป็นเอกสาร PDF -->
+    <!-- นำเข้าไลบรารี html2pdf สำหรับแปลงหน้าเว็บเป็นเอกสาร PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
@@ -37,17 +37,35 @@
             transform: scale(0.95);
         }
 
-        /* สไตล์ตารางรายงานแบบกะทัดรัด ประหยัดหมึก */
+        /* สไตล์ตารางรายงานแบบกะทัดรัดตามตัวอย่าง */
         .report-table-container {
             width: 100%;
-            max-width: 500px;
+            max-width: 550px;
             margin: 0 auto;
             background: #ffffff;
             padding: 15px;
             border: 1px solid #d1d5db;
         }
 
-        /* CSS พิเศษสำหรับการสั่งพิมพ์ผ่านเครื่องปริ้นเตอร์ */
+        .custom-report-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+
+        .custom-report-table th, .custom-report-table td {
+            border: 1px solid #d1d5db;
+            padding: 4px 6px;
+            vertical-align: middle;
+        }
+
+        .custom-report-table th {
+            background-color: #f3f4f6;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        /* CSS สำหรับการพิมพ์ */
         @media print {
             body * {
                 visibility: hidden;
@@ -65,7 +83,7 @@
                 padding: 0 !important;
                 margin: 0 !important;
             }
-            .delete-btn, .no-print {
+            .no-print {
                 display: none !important;
             }
             @page {
@@ -190,7 +208,7 @@
                 </button>
             </div>
 
-            <!-- โซนรายงาน -->
+            <!-- โซนรายงานแบบตาราง -->
             <div id="report-export-area" class="report-table-container">
                 <div class="text-center mb-3 pb-2 border-b border-gray-400">
                     <h1 class="text-sm font-bold text-gray-900">บันทึกใบวิ่งงานและสรุปค่าเที่ยว แผนกส่งเอกสาร</h1>
@@ -392,9 +410,7 @@
             document.getElementById('print-cycle-text').innerText = `รอบงาน ${fmt(startD)} - ${fmt(endD)}`;
         }
 
-        // ฟังก์ชันสั่งพิมพ์เอกสารสำหรับมือถือ
         function printReport() {
-            // ตรวจสอบเบราว์เซอร์ LINE
             const isLine = navigator.userAgent.indexOf('Line') > -1;
             if (isLine) {
                 alert('โปรดเปิดลิงก์นี้ในเบราว์เซอร์ Chrome หรือ Safari (กดจุด 3 จุดมุมขวาบน -> เลือก Open in Chrome/Safari) เพื่อให้ระบบสั่งพิมพ์ทำงานได้อย่างสมบูรณ์ครับ');
@@ -455,50 +471,51 @@
                 grandTotal += r.amount;
             });
 
+            let tableHTML = `<table class="custom-report-table">`;
+            
             for (const dateStr in grouped) {
                 const dayItems = grouped[dateStr];
                 let dayTotal = 0;
 
-                const dayBlock = document.createElement('div');
-                dayBlock.className = 'mb-2 text-xs';
-
-                let itemsHTML = '';
                 dayItems.forEach((item, index) => {
                     dayTotal += item.amount;
-                    itemsHTML += `
-                        <div class="flex justify-between items-center py-1 px-1 border-b border-gray-100 last:border-0">
-                            <div class="pr-2 flex items-center gap-2">
-                                <span class="text-gray-500 w-4 text-right">${index + 1}.</span>
-                                <span class="font-medium text-gray-800">${item.location}</span>
-                                ${item.time ? `<span class="text-[10px] text-gray-400">(${item.time})</span>` : ''}
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <span class="font-semibold text-gray-800">${item.amount}.-</span>
-                                <button type="button" onclick="deleteRecord(${item.id})" class="delete-btn text-red-400 text-[10px] hover:text-red-600 px-1 no-print">✕</button>
-                            </div>
-                        </div>
+                    tableHTML += `<tr>`;
+                    
+                    // แสดงวันที่เฉพาะแถวแรกของวันนั้นๆ
+                    if (index === 0) {
+                        tableHTML += `<td rowspan="${dayItems.length + 1}" style="width: 18%; text-align: center; font-weight: bold; background-color: #fafafa;">${dateStr}</td>`;
+                    }
+
+                    tableHTML += `
+                        <td style="width: 42%;">${index + 1}. ${item.location}</td>
+                        <td style="width: 25%; text-align: center; color: #555;">${item.time || '-'}</td>
+                        <td style="width: 15%; text-align: right;">
+                            ${item.amount}.- 
+                            <button type="button" onclick="deleteRecord(${item.id})" class="delete-btn text-red-500 font-bold px-1 no-print" style="margin-left: 4px;">✕</button>
+                        </td>
                     `;
+                    tableHTML += `</tr>`;
                 });
 
-                dayBlock.innerHTML = `
-                    <div class="bg-gray-200 text-gray-900 font-bold px-1.5 py-0.5 text-[11px]">${dateStr}</div>
-                    <div class="bg-white px-1">${itemsHTML}</div>
-                    <div class="bg-gray-100 px-1.5 py-0.5 flex justify-between items-center font-bold text-gray-800 border-t border-gray-300">
-                        <span>TOTAL</span>
-                        <span>${dayTotal}.-</span>
-                    </div>
+                // แถวสรุปยอดรวมประจำวัน (TOTAL)
+                tableHTML += `
+                    <tr style="background-color: #f3f4f6; font-weight: bold;">
+                        <td colspan="2">TOTAL</td>
+                        <td style="text-align: right;">${dayTotal}.-</td>
+                    </tr>
                 `;
-
-                container.appendChild(dayBlock);
             }
 
-            const grandTotalDiv = document.createElement('div');
-            grandTotalDiv.className = 'bg-gray-300 px-2 py-1 flex justify-between items-center text-xs font-bold text-gray-900 mt-2 border-t border-gray-400';
-            grandTotalDiv.innerHTML = `
-                <span>TOTAL รวมทั้งหมด</span>
-                <span>${grandTotal.toLocaleString()}.-</span>
+            // แถวสรุปยอดรวมทั้งหมด (TOTAL รวมทั้งหมด)
+            tableHTML += `
+                <tr style="background-color: #e5e7eb; font-weight: bold; font-size: 12px;">
+                    <td colspan="3" style="text-align: left;">TOTAL รวมทั้งหมด</td>
+                    <td style="text-align: right;">${grandTotal.toLocaleString()}.-</td>
+                </tr>
             `;
-            container.appendChild(grandTotalDiv);
+
+            tableHTML += `</table>`;
+            container.innerHTML = tableHTML;
         }
 
         setUser(currentUser);
