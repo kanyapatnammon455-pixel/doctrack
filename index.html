@@ -37,19 +37,14 @@
             transform: scale(0.95);
         }
 
-        .day-card {
+        /* สไตล์ตารางรายงานแบบกะทัดรัด ประหยัดหมึก ตามตัวอย่าง */
+        .report-table-container {
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
             background: #ffffff;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-            margin-bottom: 16px;
-        }
-        .day-header {
-            background-color: #212121;
-            color: #ffffff;
-            padding: 6px 16px;
-            font-weight: bold;
-            font-size: 0.9rem;
+            padding: 15px;
+            border: 1px solid #d1d5db;
         }
     </style>
 </head>
@@ -61,7 +56,7 @@
             บันทึกค่าเที่ยวแผนกส่งเอกสาร
         </div>
         
-        <!-- ปุ่มเลือกชื่อผู้ใช้ (เพิ่มคำว่า นาย นำหน้าชื่อทุกคน) -->
+        <!-- ปุ่มเลือกชื่อผู้ใช้ -->
         <div class="mt-3 flex justify-center gap-2 flex-wrap">
             <button onclick="setUser('นายโอภาส')" class="user-btn px-4 py-1 rounded-full text-xs font-semibold bg-white text-orange-600 shadow-sm">นายโอภาส</button>
             <button onclick="setUser('นายนรินทร์')" class="user-btn px-4 py-1 rounded-full text-xs font-semibold bg-white/40 text-white">นายนรินทร์</button>
@@ -163,11 +158,14 @@
                 </button>
             </div>
 
-            <!-- โซนรายงานที่จะถูกแปลงเป็นไฟล์ PDF -->
-            <div id="report-export-area" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-                <div class="text-center mb-4 pb-2 border-b-2 border-gray-800">
-                    <h1 class="text-lg font-bold text-gray-900">บันทึกใบวิ่งงานและสรุปค่าเที่ยว แผนกส่งเอกสาร</h1>
-                    <p class="text-sm font-semibold text-gray-700 mt-1">ชื่อผู้ปฏิบัติงาน: <span id="print-user-name">นายโอภาส</span></p>
+            <!-- โซนรายงานที่จะถูกแปลงเป็นไฟล์ PDF (จัดกึ่งกลางและกะทัดรัดตามตัวอย่าง) -->
+            <div id="report-export-area" class="report-table-container">
+                <div class="text-center mb-3 pb-2 border-b border-gray-400">
+                    <h1 class="text-sm font-bold text-gray-900">บันทึกใบวิ่งงานและสรุปค่าเที่ยว แผนกส่งเอกสาร</h1>
+                    <div class="flex justify-between text-[11px] text-gray-600 mt-1 px-1">
+                        <span>ชื่อผู้ปฏิบัติงาน: <span id="print-user-name">นายโอภาส</span></span>
+                        <span id="print-cycle-text">รอบงาน 24/08/69 - 23/09/69</span>
+                    </div>
                 </div>
 
                 <div id="report-list-container"></div>
@@ -177,7 +175,6 @@
     </main>
 
     <script>
-        // ปรับชื่อ Admin และ User เริ่มต้นให้มีคำว่า "นาย"
         const ADMIN_USER = 'นายโอภาส'; 
         let currentUser = 'นายโอภาส';
         const defaultTags = ['สามแยก', 'ไปรษณีย์', 'ปากคลองตลาด', 'กรุ๊ป', 'สรรพากร', 'ร้านเป็ดเล็ก', 'สะพานพุทธ', 'ขนมหวาน', 'ร้านหมูทอง (ตึกเก่า)', 'ประตูน้ำ'];
@@ -347,21 +344,38 @@
             }
         }
 
-        // *** ฟังก์ชันแปลงโซนรายงานให้ออกมาเป็นไฟล์ PDF ***
+        // *** ฟังก์ชันคำนวณรอบงานอัตโนมัติ (24 ถึง 23) ***
+        function updateCycleText(dateStrList) {
+            if (!dateStrList || dateStrList.length === 0) return;
+            // ใช้รอบงานตามวันที่จริงจากรายการแรกและรายการสุดท้าย หรือคำนวณจากวันที่ปัจจุบัน
+            const now = new Date();
+            let y = now.getFullYear();
+            let m = now.getMonth();
+            let startD, endD;
+            if (now.getDate() >= 24) {
+                startD = new Date(y, m, 24);
+                endD = new Date(y, m + 1, 23);
+            } else {
+                startD = new Date(y, m - 1, 24);
+                endD = new Date(y, m, 23);
+            }
+            const fmt = (d) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getFullYear() + 543).slice(-2)}`;
+            document.getElementById('print-cycle-text').innerText = `รอบงาน ${fmt(startD)} - ${fmt(endD)}`;
+        }
+
+        // *** ฟังก์ชันแปลงรายงานเป็น PDF แบบกะทัดรัด ***
         function exportToPDF() {
             const btn = document.getElementById('export-pdf-btn');
             btn.innerText = '⏳ กำลังสร้าง PDF...';
             btn.disabled = true;
 
-            // ซ่อนปุ่มลบ (✕) ไม่ให้ติดเข้าไปในเอกสาร PDF
             const deleteBtns = document.querySelectorAll('.delete-btn');
             deleteBtns.forEach(b => b.style.display = 'none');
 
             const element = document.getElementById('report-export-area');
 
-            // ตั้งค่าเอกสาร PDF ขนาด A4 แนวตั้ง
             const opt = {
-                margin:       10,
+                margin:       [15, 10, 15, 10], // ขอบบน 15 มม. จัดกึ่งกลางพอดี
                 filename:     `รายงานค่าเที่ยว_${currentUser}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { scale: 2 },
@@ -369,7 +383,6 @@
             };
 
             html2pdf().set(opt).from(element).save().then(() => {
-                // คืนค่าปุ่มลบและปุ่มดาวน์โหลด
                 deleteBtns.forEach(b => b.style.display = 'inline-block');
                 btn.innerText = '📄 ส่งออกไฟล์ PDF';
                 btn.disabled = false;
@@ -388,11 +401,12 @@
             let records = getRecords().filter(r => r.user === currentUser);
 
             if (records.length === 0) {
-                container.innerHTML = `<div class="text-center py-10 text-gray-400 font-medium">ยังไม่มีข้อมูลการลงงานของ ${currentUser}</div>`;
+                container.innerHTML = `<div class="text-center py-6 text-gray-400 text-xs font-medium">ยังไม่มีข้อมูลการลงงานของ ${currentUser}</div>`;
                 return;
             }
 
             records.sort((a, b) => (a.rawDate && b.rawDate) ? a.rawDate.localeCompare(b.rawDate) : 0);
+            updateCycleText(records);
 
             const grouped = {};
             let grandTotal = 0;
@@ -407,43 +421,44 @@
                 const dayItems = grouped[dateStr];
                 let dayTotal = 0;
 
-                const dayCard = document.createElement('div');
-                dayCard.className = 'day-card border border-gray-200';
+                const dayBlock = document.createElement('div');
+                dayBlock.className = 'mb-2 text-xs';
 
                 let itemsHTML = '';
                 dayItems.forEach((item, index) => {
                     dayTotal += item.amount;
                     itemsHTML += `
-                        <div class="flex justify-between items-center py-2.5 px-4 border-b border-gray-100 last:border-0 text-sm">
-                            <div class="pr-2">
-                                <div class="font-bold text-gray-800">${index + 1}. ${item.location}</div>
-                                ${item.time ? `<div class="text-xs text-gray-400">${item.time}</div>` : ''}
+                        <div class="flex justify-between items-center py-1 px-1 border-b border-gray-100 last:border-0">
+                            <div class="pr-2 flex items-center gap-2">
+                                <span class="text-gray-500 w-4 text-right">${index + 1}.</span>
+                                <span class="font-medium text-gray-800">${item.location}</span>
+                                ${item.time ? `<span class="text-[10px] text-gray-400">(${item.time})</span>` : ''}
                             </div>
                             <div class="flex items-center gap-2">
-                                <span class="font-bold text-gray-800">${item.amount}.-</span>
-                                <button type="button" onclick="deleteRecord(${item.id})" class="delete-btn text-red-400 text-xs hover:text-red-600 px-1">✕</button>
+                                <span class="font-semibold text-gray-800">${item.amount}.-</span>
+                                <button type="button" onclick="deleteRecord(${item.id})" class="delete-btn text-red-400 text-[10px] hover:text-red-600 px-1 no-print">✕</button>
                             </div>
                         </div>
                     `;
                 });
 
-                dayCard.innerHTML = `
-                    <div class="day-header">${dateStr}</div>
-                    <div>${itemsHTML}</div>
-                    <div class="bg-amber-50/60 px-4 py-2 flex justify-between items-center text-sm border-t border-amber-100 font-bold">
-                        <span class="text-gray-600">TOTAL</span>
-                        <span class="text-orange-600 underline">${dayTotal}.-</span>
+                dayBlock.innerHTML = `
+                    <div class="bg-gray-200 text-gray-900 font-bold px-1.5 py-0.5 text-[11px]">${dateStr}</div>
+                    <div class="bg-white px-1">${itemsHTML}</div>
+                    <div class="bg-gray-100 px-1.5 py-0.5 flex justify-between items-center font-bold text-gray-800 border-t border-gray-300">
+                        <span>TOTAL</span>
+                        <span>${dayTotal}.-</span>
                     </div>
                 `;
 
-                container.appendChild(dayCard);
+                container.appendChild(dayBlock);
             }
 
             const grandTotalDiv = document.createElement('div');
-            grandTotalDiv.className = 'flex justify-between items-center pt-4 pb-2 px-2 text-base font-bold text-gray-900 border-t-2 border-dashed border-gray-300 mt-4';
+            grandTotalDiv.className = 'bg-gray-300 px-2 py-1 flex justify-between items-center text-xs font-bold text-gray-900 mt-2 border-t border-gray-400';
             grandTotalDiv.innerHTML = `
                 <span>TOTAL รวมทั้งหมด</span>
-                <span class="text-xl font-extrabold text-gray-900 underline decoration-double">${grandTotal.toLocaleString()}.-</span>
+                <span>${grandTotal.toLocaleString()}.-</span>
             `;
             container.appendChild(grandTotalDiv);
         }
